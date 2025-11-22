@@ -1,6 +1,6 @@
 # ECLC - E-comOS C/C++ Language Compiler
-![License: GPLv3](https://img.shields.io/badge/License-GPLv3-blue.svg)
-![Platform](https://img.shields.io/badge/Platform-E--comOS-orange) 
+![License: GPLv3](https://img.shields.io/badge/License-GPLv3-blue.svg)<br>
+![Platform](https://img.shields.io/badge/Platform-E--comOS-orange) <br>
 This compiler is suitable for use when you want to run or compile C/C++ programs on E-comOS. It is more than just a compiler; for convenience, we have integrated a runtime (C/C++) into the compiler.<br>
 However, how you actually write your program is not the compiler's responsibility, but the editor's. E-comOS currently doesn't have any compatible editors, not even nano (GNU probably doesn't care much about us either).
 ## How to install it
