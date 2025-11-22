@@ -36,7 +36,7 @@ That's all of it!
 We use GNU GPL Version 3 , 'cause myself like GNU license , I'm used Apache license in a RUI apps , but ... I don't like that
 
 ---------------
-**END OF THIS TEXT**
+
 Music:I love—love GNU—U oh oh oh oh oh (rising key)—but they don't even glance at me—eye—.<br>
 ```bash
 ddd@saladin-macbookair ~/ECLC (main)> man gcc
