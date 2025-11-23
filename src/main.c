@@ -50,8 +50,44 @@ static bool is_c_file(const char* filename) {
     return ext && (strcmp(ext, ".c") == 0 || strcmp(ext, ".cpp") == 0);
 }
 
-// Compile single file (quiet mode for folder compilation)
-static int compile_file_quiet(const char* filename) {
+// Generate executable from AST
+static int generate_executable(ASTNode* ast, const char* output_file) {
+    // Create temporary C file
+    FILE* c_file = fopen("temp.c", "w");
+    if (!c_file) {
+        fprintf(stderr, "Error: Cannot create temporary C file\n");
+        return 1;
+    }
+    
+    // Find return value from AST
+    int return_value = 0;
+    if (ast && ast->left && ast->left->left && ast->left->left->left) {
+        ASTNode* return_node = ast->left->left->left;
+        if (return_node->type == NODE_INTEGER_LITERAL && return_node->token.value) {
+            return_value = atoi(return_node->token.value);
+        }
+    }
+    
+    // Generate C code
+    fprintf(c_file, "int main() {\n");
+    fprintf(c_file, "    return %d;\n", return_value);
+    fprintf(c_file, "}\n");
+    
+    fclose(c_file);
+    
+    // Compile with gcc
+    char cmd[512];
+    snprintf(cmd, sizeof(cmd), "gcc -o %s temp.c 2>/dev/null", output_file);
+    int result = system(cmd);
+    
+    // Clean up
+    remove("temp.c");
+    
+    return result == 0 ? 0 : 1;
+}
+
+// Compile single file with output (quiet mode for folder compilation)
+static int compile_file_quiet_with_output(const char* filename, const char* output_file) {
     char* source = read_file(filename);
     if (!source) {
         return 1;
@@ -72,16 +108,22 @@ static int compile_file_quiet(const char* filename) {
         return 1;
     }
     
+    int result = generate_executable(ast, output_file);
+    
     parser_destroy(parser);
     token_stream_free(tokens);
     xfree(source);
     
-    return 0;
+    return result;
 }
 
-// Compile single file (verbose mode)
-static int compile_file(const char* filename) {
-    printf("Compiling: %s\n", filename);
+// Compile single file with optional output
+static int compile_file_with_output(const char* filename, const char* output_file) {
+    if (!output_file) {
+        printf("Compiling: %s\n", filename);
+    } else {
+        printf("\033[32m   Compiling\033[0m %s -> %s\n", filename, output_file);
+    }
     
     char* source = read_file(filename);
     if (!source) {
@@ -105,15 +147,30 @@ static int compile_file(const char* filename) {
         return 1;
     }
     
-    printf("AST for %s:\n", filename);
-    ast_print(ast, 0);
-    printf("\n");
+    int result = 0;
+    if (output_file) {
+        // Generate executable
+        result = generate_executable(ast, output_file);
+        if (result == 0) {
+            printf("\033[32m    Finished\033[0m executable: %s\n", output_file);
+        }
+    } else {
+        // Just show AST
+        printf("AST for %s:\n", filename);
+        ast_print(ast, 0);
+        printf("\n");
+    }
     
     parser_destroy(parser);
     token_stream_free(tokens);
     xfree(source);
     
-    return 0;
+    return result;
+}
+
+// Compile single file (verbose mode)
+static int compile_file(const char* filename) {
+    return compile_file_with_output(filename, NULL);
 }
 
 // Print cargo-style progress bar
@@ -193,7 +250,14 @@ static int compile_folder(const char* folder_path) {
             char filepath[1024];
             snprintf(filepath, sizeof(filepath), "%s/%s", folder_path, entry->d_name);
             
-            if (compile_file_quiet(filepath) != 0) {
+            // Generate output filename (remove .c/.cpp extension)
+            char output_name[256];
+            strncpy(output_name, entry->d_name, sizeof(output_name) - 1);
+            output_name[sizeof(output_name) - 1] = '\0';
+            char* dot = strrchr(output_name, '.');
+            if (dot) *dot = '\0';
+            
+            if (compile_file_quiet_with_output(filepath, output_name) != 0) {
                 print_progress(current, total_files, entry->d_name, false);
                 failed_count++;
                 printf("\n\033[31mError:\033[0m Failed to compile %s\n", entry->d_name);
@@ -203,9 +267,9 @@ static int compile_folder(const char* folder_path) {
     
     printf("\n");
     if (failed_count == 0) {
-        printf("\033[32m    Finished\033[0m compiling %d files\n", total_files);
+        printf("\033[32m    Finished\033[0m compiling %d files, %d executables generated\n", total_files, total_files);
     } else {
-        printf("\033[31m    Finished\033[0m with %d errors out of %d files\n", failed_count, total_files);
+        printf("\033[31m    Finished\033[0m with %d errors out of %d files, %d executables generated\n", failed_count, total_files, total_files - failed_count);
     }
     
     closedir(dir);
@@ -214,7 +278,7 @@ static int compile_folder(const char* folder_path) {
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        fprintf(stderr, "Usage: %s <source_file> | -f <folder>\n", argv[0]);
+        fprintf(stderr, "Usage: %s <source_file> [-o output] | -f <folder>\n", argv[0]);
         return 1;
     }
     
@@ -223,6 +287,29 @@ int main(int argc, char* argv[]) {
         return compile_folder(argv[2]);
     }
     
+    // Parse arguments for single file compilation
+    const char* input_file = argv[1];
+    const char* output_file = NULL;
+    
+    // Look for -o flag
+    for (int i = 2; i < argc - 1; i++) {
+        if (strcmp(argv[i], "-o") == 0) {
+            if (i + 1 < argc) {
+                output_file = argv[i + 1];
+                break;
+            } else {
+                fprintf(stderr, "Error: -o requires output filename\n");
+                return 1;
+            }
+        }
+    }
+    
+    // Handle case where -o is provided without filename
+    if (argc >= 3 && strcmp(argv[argc-1], "-o") == 0) {
+        fprintf(stderr, "Error: -o requires output filename\n");
+        return 1;
+    }
+    
     // Single file compilation
-    return compile_file(argv[1]);
+    return compile_file_with_output(input_file, output_file);
 }
