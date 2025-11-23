@@ -1,4 +1,4 @@
-/** 
+/* 
     ECLC - E-comOS C/C++ Language Compiler
     Copyright (C) 2025  Saladin5101
 
@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
  */
-#ifdef ECLC_TOKEN_H
+#ifndef ECLC_TOKEN_H
 #define ECLC_TOKEN_H
 
 #include "common.h"

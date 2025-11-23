@@ -14,7 +14,6 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
  */
 #ifndef ECLC_COMMON_H
 #define ECLC_COMMON_H
@@ -29,9 +28,10 @@ typedef int64_t i64;
 typedef uint32_t u32;
 typedef uint64_t u64;
 
-// Mentroy
+// Memory
 void* xmalloc(size_t size);
 void* xcalloc(size_t count, size_t size);
+void* xrealloc(void* ptr, size_t size);
 void xfree(void* ptr);
 
 // Error
