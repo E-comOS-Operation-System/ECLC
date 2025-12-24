@@ -4,7 +4,7 @@
 set -e
 
 echo "Installing ECLC - E-comOS C/C++ Language Compiler..."
-git clone https://github.com/E-comOS-Operation-System/ECLC.git
+git clone https://github.com/Saladin5101/ECLC.git
 cd ECLC
 # Build the compiler
 echo "Building ECLC..."
