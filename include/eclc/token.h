@@ -23,21 +23,52 @@
 
 typedef enum {
     // Literal quantity
-    TOK_INTEGER, // Literal quantity : 123
+    TOK_INTEGER,       // 123
+    TOK_STRING,        // "hello"
+    TOK_CHAR,          // 'a'
     // Keywords
-    TOK_INT, // Int
-    TOK_RETURN, // Return
+    TOK_INT,           // int
+    TOK_RETURN,        // return
+    TOK_INCLUDE,       // include (for #include)
     // identifier
     TOK_IDENTIFIER,
-    // Operators and delimiters
+    // Operators
+    TOK_ASSIGN,        // =
+    TOK_PLUS,          // +
+    TOK_MINUS,         // -
+    TOK_MULTIPLY,      // *
+    TOK_DIVIDE,        // /
+    TOK_MODULO,        // %
+    TOK_AMPERSAND,     // &
+    TOK_PIPE,          // |
+    TOK_CARET,         // ^
+    TOK_TILDE,         // ~
+    TOK_EXCLAMATION,   // !
+    TOK_QUESTION,      // ?
+    TOK_COLON,         // :
+    // Comparison
+    TOK_EQ,            // ==
+    TOK_NE,            // !=
+    TOK_LT,            // <
+    TOK_LE,            // <=
+    TOK_GT,            // >
+    TOK_GE,            // >=
+    // Delimiters
     TOK_LBRACE,        // {
     TOK_RBRACE,        // }
     TOK_LPAREN,        // (
     TOK_RPAREN,        // )
+    TOK_LBRACKET,      // [
+    TOK_RBRACKET,      // ]
     TOK_SEMICOLON,     // ;
+    TOK_COMMA,         // ,
+    TOK_DOT,           // .
+    TOK_ARROW,         // ->
+    // Preprocessor
+    TOK_HASH,          // #
     // Special
-    TOK_EOF, // End of file(s)
-    TOK_ERROR // Error(s)
+    TOK_EOF,           // End of file
+    TOK_ERROR          // Error
 } TokenType;
 
 typedef struct {

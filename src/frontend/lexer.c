@@ -65,6 +65,87 @@ TokenStream* tokenize(const char* source) {
             continue;
         }
         
+        // String literals
+        if (c == '"') {
+            int start = pos++;
+            column++;
+            while (source[pos] != '"' && source[pos] != '\0') {
+                if (source[pos] == '\n') {
+                    line++;
+                    column = 1;
+                } else {
+                    column++;
+                }
+                pos++;
+            }
+            if (source[pos] == '"') {
+                pos++;
+                column++;
+            }
+            int length = pos - start;
+            char* value = xmalloc(length + 1);
+            strncpy(value, source + start, length);
+            value[length] = '\0';
+            
+            token_stream_add(stream, create_token(TOK_STRING, value, line, column - length));
+            xfree(value);
+            continue;
+        }
+        
+        // Character literals
+        if (c == '\'') {
+            int start = pos++;
+            column++;
+            if (source[pos] == '\\') {
+                pos += 2; // Skip escaped character
+                column += 2;
+            } else {
+                pos++;
+                column++;
+            }
+            if (source[pos] == '\'') {
+                pos++;
+                column++;
+            }
+            int length = pos - start;
+            char* value = xmalloc(length + 1);
+            strncpy(value, source + start, length);
+            value[length] = '\0';
+            
+            token_stream_add(stream, create_token(TOK_CHAR, value, line, column - length));
+            xfree(value);
+            continue;
+        }
+        
+        // Comments
+        if (c == '/' && source[pos + 1] == '*') {
+            pos += 2;
+            column += 2;
+            while (!(source[pos] == '*' && source[pos + 1] == '/') && source[pos] != '\0') {
+                if (source[pos] == '\n') {
+                    line++;
+                    column = 1;
+                } else {
+                    column++;
+                }
+                pos++;
+            }
+            if (source[pos] == '*') {
+                pos += 2;
+                column += 2;
+            }
+            continue;
+        }
+        
+        // Line comments
+        if (c == '/' && source[pos + 1] == '/') {
+            while (source[pos] != '\n' && source[pos] != '\0') {
+                pos++;
+                column++;
+            }
+            continue;
+        }
+        
         // Know number digit
         if (isdigit(c)) {
             int start = pos;
@@ -104,14 +185,66 @@ TokenStream* tokenize(const char* source) {
             continue;
         }
         
-        // A char's token
+        // Multi-character operators
+        if (c == '=' && source[pos + 1] == '=') {
+            token_stream_add(stream, create_token(TOK_EQ, "==", line, column));
+            pos += 2;
+            column += 2;
+            continue;
+        }
+        if (c == '!' && source[pos + 1] == '=') {
+            token_stream_add(stream, create_token(TOK_NE, "!=", line, column));
+            pos += 2;
+            column += 2;
+            continue;
+        }
+        if (c == '<' && source[pos + 1] == '=') {
+            token_stream_add(stream, create_token(TOK_LE, "<=", line, column));
+            pos += 2;
+            column += 2;
+            continue;
+        }
+        if (c == '>' && source[pos + 1] == '=') {
+            token_stream_add(stream, create_token(TOK_GE, ">=", line, column));
+            pos += 2;
+            column += 2;
+            continue;
+        }
+        if (c == '-' && source[pos + 1] == '>') {
+            token_stream_add(stream, create_token(TOK_ARROW, "->", line, column));
+            pos += 2;
+            column += 2;
+            continue;
+        }
+        
+        // Single character tokens
         TokenType type = TOK_ERROR;
         switch (c) {
             case '{': type = TOK_LBRACE; break;
             case '}': type = TOK_RBRACE; break;
             case '(': type = TOK_LPAREN; break;
             case ')': type = TOK_RPAREN; break;
+            case '[': type = TOK_LBRACKET; break;
+            case ']': type = TOK_RBRACKET; break;
             case ';': type = TOK_SEMICOLON; break;
+            case ',': type = TOK_COMMA; break;
+            case '.': type = TOK_DOT; break;
+            case '=': type = TOK_ASSIGN; break;
+            case '+': type = TOK_PLUS; break;
+            case '-': type = TOK_MINUS; break;
+            case '*': type = TOK_MULTIPLY; break;
+            case '/': type = TOK_DIVIDE; break;
+            case '%': type = TOK_MODULO; break;
+            case '&': type = TOK_AMPERSAND; break;
+            case '|': type = TOK_PIPE; break;
+            case '^': type = TOK_CARET; break;
+            case '~': type = TOK_TILDE; break;
+            case '!': type = TOK_EXCLAMATION; break;
+            case '?': type = TOK_QUESTION; break;
+            case ':': type = TOK_COLON; break;
+            case '<': type = TOK_LT; break;
+            case '>': type = TOK_GT; break;
+            case '#': type = TOK_HASH; break;
             default:
                 fprintf(stderr, "Error: Unknown character '%c' at line %d, column %d\n", 
                        c, line, column);
